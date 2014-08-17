@@ -1,4 +1,4 @@
-require "simulacrum/browserstack/version"
+require 'simulacrum/browserstack/version'
 
 module Simulacrum
   module Browserstack
