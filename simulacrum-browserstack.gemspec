@@ -3,21 +3,24 @@ lib = File.expand_path('../lib', __FILE__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'simulacrum/browserstack/version'
 
-Gem::Specification.new do |spec|
-  spec.name          = "simulacrum-browserstack"
-  spec.version       = Simulacrum::Browserstack::VERSION
-  spec.authors       = ["Justin Morris"]
-  spec.email         = ["desk@pixelbloom.com"]
-  spec.summary       = %q{TODO: Write a short summary. Required.}
-  spec.description   = %q{TODO: Write a longer description. Optional.}
-  spec.homepage      = ""
-  spec.license       = "MIT"
+Gem::Specification.new do |gem|
+  gem.name          = 'simulacrum-browserstack'
+  gem.version       = Simulacrum::Browserstack::VERSION
+  gem.authors       = ['Justin Morris']
+  gem.email         = ['desk@pixelbloom.com']
+  gem.summary       = %q{BrowserStack runner for Simulacrum}
+  gem.description   = %q{BrowserStack runner for Simulacrum}
+  gem.homepage      = ''
+  gem.license       = 'MIT'
 
-  spec.files         = `git ls-files -z`.split("\x0")
-  spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
-  spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
-  spec.require_paths = ["lib"]
+  gem.files         = `git ls-files -z`.split("\x0")
+  gem.executables   = gem.files.grep(%r{^bin/}) { |f| File.basename(f) }
+  gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
+  gem.require_paths = ['lib']
 
-  spec.add_development_dependency "bundler", "~> 1.6"
-  spec.add_development_dependency "rake"
+  gem.add_dependency 'parallel', ['~> 1.2.0']
+  gem.add_dependency 'net-http-persistent'
+
+  gem.add_development_dependency 'bundler', '~> 1.6'
+  gem.add_development_dependency 'rake'
 end

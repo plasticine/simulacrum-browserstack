@@ -1,5 +1,5 @@
 # encoding: UTF-8
-require 'simulacrum/driver/base'
+require 'simulacrum/driver'
 require 'capybara'
 require 'selenium-webdriver'
 require 'selenium/webdriver/remote/http/persistent'
