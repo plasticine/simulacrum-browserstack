@@ -13,8 +13,9 @@ module Simulacrum
       DEFAULT_OPTIONS = {
         skip_check: true,
         only_automate: false,
-        verbose: false,
-        force: true
+        verbose: true,
+        force: true,
+        identifier: nil
       }
 
       def initialize(username, apikey, ports, options = {})
@@ -34,6 +35,7 @@ module Simulacrum
       end
 
       def close
+        Simulacrum.logger.debug('BrowserStack') { "Closing tunnel (pid #{@pid})" }
         kill
       end
 
@@ -45,7 +47,7 @@ module Simulacrum
           binary_path
         else
           Simulacrum.logger.fail('BrowserStack') { 'BrowserStackLocal binary not found or not executable' }
-          fail
+          exit(1)
         end
       end
 
@@ -57,12 +59,14 @@ module Simulacrum
 
       def command
         cmd = [binary_path]
-        cmd << '-skipCheck'    if @options.skip_check == true
-        cmd << '-onlyAutomate' if @options.only_automate == true
-        cmd << '-force'        if @options.force == true
-        cmd << '-v'            if @options.verbose == true
+        cmd << "-localIdentifier #{@options.identifier}" unless @options.identifier.nil?
+        cmd << '-skipCheck'                              if @options.skip_check == true
+        cmd << '-onlyAutomate'                           if @options.only_automate == true
+        cmd << '-force'                                  if @options.force == true
+        cmd << '-v'                                      if @options.verbose == true
         cmd << @apikey
         cmd << formatted_ports
+        puts cmd.join(' ')
         cmd.join(' ')
       end
 
@@ -76,8 +80,8 @@ module Simulacrum
 
       def ensure_open
         Simulacrum.logger.debug('BrowserStack') { 'Waiting for tunnel to open' }
-        Timeout.timeout(240) do
-          sleep 1 until tunnel_open?
+        Timeout.timeout(60) do
+          sleep 1 until tunnel_connected?
         end
         @open = true
         Simulacrum.logger.debug('BrowserStack') { 'Tunnel open' }
@@ -86,8 +90,8 @@ module Simulacrum
         exit(1)
       end
 
-      def tunnel_open?
-        `curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:45691`.to_i == 200
+      def tunnel_connected?
+        @process.gets =~ /^Connected.$/
       end
 
       def running?

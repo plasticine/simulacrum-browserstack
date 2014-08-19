@@ -4,6 +4,7 @@ require_relative './tunnel'
 require_relative './summary'
 require_relative './api'
 require_relative './driver'
+require_relative './formatter'
 require 'simulacrum/runner'
 require 'parallel'
 require 'yaml'
@@ -23,33 +24,39 @@ module Simulacrum
       attr_reader :app_ports
 
       def initialize
-        start_timer
-
+        puts 'Simulacrum::Browserstack::Runner.initialize'
+        @app_ports = app_ports
         @username = Simulacrum.runner_options.username
         @apikey = Simulacrum.runner_options.apikey
-        @app_ports = app_ports
         @api = Simulacrum::Browserstack::API.new(@username, @apikey)
-        @tunnel = Simulacrum::Browserstack::Tunnel.new(@username, @apikey, @app_ports)
-
-        set_global_env
-        execute
-        summarize_results
-        summarize_exit_codes
-      ensure
-        @tunnel.close if @tunnel
       end
 
-      def execute
+      def run
+        start_timer
+        @tunnel = Simulacrum::Browserstack::Tunnel.new(@username, @apikey, @app_ports)
+        puts 'Simulacrum::Browserstack::Runner.run'
+        set_global_env
+        run_in_parallel
+        summarize_results
+        @exit_code = summarize_exit_codes
+      ensure
+        @tunnel.close
+      end
+
+      def run_in_parallel
+        puts 'Simulacrum::Browserstack::Runner.run_in_parallel'
         Simulacrum.logger.info('BrowserStack') { "Using runner with #{processes} remote workers" }
-        @process_exit_codes, @process_results = Parallel.map_with_index(browsers, in_processes: processes) do |(name, caps), index|
+        @process_exit_codes, @process_results = Parallel.map_with_index(browsers, in_processes: processes) do |(browser_name, caps), index|
           begin
             ensure_available_remote_runner
             configure_app_port(index)
-            configure_environment(name, caps)
-            configure_browser_setting(name)
-            exit_code = run
-            [exit_code, { results: dump_results }]
+            configure_environment(browser_name, caps)
+            configure_driver
+            configure_rspec
+            configure_browser_setting(browser_name)
+            [run_rspec, { results: dump_results }]
           rescue SystemExit
+            raise
             exit 1
           ensure
             quit_browser
@@ -66,6 +73,7 @@ module Simulacrum
       end
 
       def configure_browser_setting(name)
+        puts 'Simulacrum::Browserstack::Runner.configure_browser_setting'
         RSpec.configuration.around do |example|
           example.metadata[:browser] = name
           begin
@@ -76,10 +84,12 @@ module Simulacrum
 
       def configure_rspec
         super
+        puts 'Simulacrum::Browserstack::Runner.configure_rspec'
         RSpec.configuration.instance_variable_set(:@reporter, reporter)
       end
 
       def configure_driver
+        puts 'Simulacrum::Browserstack::Runner.configure_driver'
         Simulacrum::Browserstack::Driver.use
       end
 
@@ -88,7 +98,7 @@ module Simulacrum
       end
 
       def formatter
-        @formatter ||= Simulacrum::Formatters::SimulacrumFormatter.new($stdout)
+        @formatter ||= Simulacrum::Browserstack::Formatter.new($stdout)
       end
 
       def dump_results
@@ -96,7 +106,7 @@ module Simulacrum
       end
 
       def ensure_available_remote_runner
-        with_retries(max_tries: 20, base_sleep_seconds: 0.5, max_sleep_seconds: 15) do
+        with_retries(max_tries: 10, base_sleep_seconds: 0.5, max_sleep_seconds: 15) do
           remote_worker_available?
         end
       end
@@ -124,7 +134,7 @@ module Simulacrum
       end
 
       def summarize_exit_codes
-        @exit_code = (@process_exit_codes.inject(&:+) == 0) ? 0 : 1
+        (@process_exit_codes.reduce(&:+) == 0) ? 0 : 1
       end
 
       def configure_app_port(index)
@@ -133,7 +143,7 @@ module Simulacrum
 
       # rubocop:disable MethodLength
       def configure_environment(name, caps)
-        ENV['SELENIUM_REMOTE_URL']            = @tunnel.selenium_remote_url
+        puts 'Simulacrum::Browserstack::Runner.configure_environment'
         ENV['BS_DRIVER_NAME']                 = name
         ENV['SELENIUM_BROWSER']               = caps['browser']
         ENV['SELENIUM_VERSION']               = caps['browser_version'].to_s

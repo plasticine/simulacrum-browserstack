@@ -1,4 +1,5 @@
 # encoding: UTF-8
+require 'json'
 require 'uri'
 require 'net/https'
 

@@ -3,6 +3,7 @@ require 'simulacrum/driver'
 require 'capybara'
 require 'selenium-webdriver'
 require 'selenium/webdriver/remote/http/persistent'
+require 'pry'
 
 module Simulacrum
   module Browserstack
@@ -27,22 +28,30 @@ module Simulacrum
 
       def capabilities
         caps = Selenium::WebDriver::Remote::Capabilities.new
-        caps['project']            = Simulacrum.configuration.project_name
-        caps['build']              = Simulacrum.configuration.build_name
-        caps['browserstack.local'] = true
-        caps['browserstack.debug'] = false
-        caps['browser']            = browser
-        caps['browserName']        = browser_name
-        caps['browser_version']    = browser_version
-        caps['os']                 = os
-        caps['os_version']         = os_version
-        caps['device']             = device
-        caps['deviceOrientation']  = device_orientation
-        caps['platform']           = platform
-        caps['resolution']         = resolution
-        caps['requireWindowFocus'] = require_window_focus
-        caps['realMobile']         = real_mobile
+        caps['project']                      = Simulacrum.configuration.project_name
+        caps['build']                        = Simulacrum.configuration.build_name
+        caps['browserstack.local']           = true
+        caps['browserstack.debug']           = true
+        caps['browser']                      = browser
+        caps['browserName']                  = browser_name
+        caps['browser_version']              = browser_version
+        caps['os']                           = os
+        caps['os_version']                   = os_version
+        caps['device']                       = device
+        caps['deviceOrientation']            = device_orientation
+        caps['platform']                     = platform
+        caps['resolution']                   = resolution
+        caps['requireWindowFocus']           = require_window_focus
+        caps['realMobile']                   = real_mobile
         caps
+      end
+
+      def driver_name
+        ENV['BS_DRIVER_NAME']
+      end
+
+      def selenium_remote_url
+        ENV['SELENIUM_REMOTE_URL']
       end
 
       def browser
